@@ -3,6 +3,7 @@ package room
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 type EventKind string
@@ -23,18 +24,22 @@ type Room struct {
 	events  chan Event
 }
 
-func (r *Room) AddPlayer(player *Player) error {
+func (r *Room) AddPlayer(player *Player, preferredType string) error {
 	if r.players[0] == nil {
+		kind, err := resolveFirstPlayerType(preferredType)
+		if err != nil {
+			return err
+		}
+		player.SetKind(kind)
 		r.players[0] = player
-		go player.readLoop(r)
-		go player.writeLoop()
+		player.start(r)
 		return nil
 	}
 
 	if r.players[1] == nil {
+		player.SetKind(oppositeType(r.players[0].kind))
 		r.players[1] = player
-		go player.readLoop(r)
-		go player.writeLoop()
+		player.start(r)
 
 		r.notifyPlayerJoined(r.players[0], 2)
 		r.notifyPlayerJoined(r.players[1], 1)
@@ -42,6 +47,26 @@ func (r *Room) AddPlayer(player *Player) error {
 	}
 
 	return errors.New("The room is full. Get out!")
+}
+
+func resolveFirstPlayerType(preferred string) (PlayerType, error) {
+	switch strings.ToLower(preferred) {
+	case "x":
+		return PlayerX, nil
+	case "o":
+		return PlayerO, nil
+	case "":
+		return PlayerX, nil
+	default:
+		return "", errors.New("invalid player type")
+	}
+}
+
+func oppositeType(kind PlayerType) PlayerType {
+	if kind == PlayerX {
+		return PlayerO
+	}
+	return PlayerX
 }
 
 func (r *Room) notifyPlayerJoined(player *Player, oponentOrder int) {

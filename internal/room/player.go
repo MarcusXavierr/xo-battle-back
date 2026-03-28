@@ -2,7 +2,6 @@ package room
 
 import (
 	"log"
-	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -65,16 +64,22 @@ func (p *Player) readLoop(room *Room) {
 	}
 }
 
-func NewPlayer(conn *websocket.Conn, name, kind string) *Player {
-	pType := PlayerO
-	if strings.ToLower(kind) == "x" {
-		pType = PlayerX
-	}
-
+func NewPlayer(conn *websocket.Conn, name string) *Player {
 	return &Player{
 		conn: conn,
-		kind: pType,
 		name: name,
 		send: make(chan []byte),
 	}
+}
+
+func (p *Player) SetKind(kind PlayerType) {
+	p.kind = kind
+}
+
+func (p *Player) start(room *Room) {
+	if p.conn == nil {
+		return
+	}
+	go p.readLoop(room)
+	go p.writeLoop()
 }
