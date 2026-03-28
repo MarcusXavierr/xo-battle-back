@@ -2,18 +2,21 @@ package room
 
 import (
 	"errors"
+	"log"
 	"sync"
 )
 
 type RoomManager struct {
-	mu    *sync.Mutex
-	rooms map[string]*Room
+	mu     *sync.Mutex
+	rooms  map[string]*Room
+	delete chan string
 }
 
 func NewRoomManager() *RoomManager {
 	return &RoomManager{
-		mu:    &sync.Mutex{},
-		rooms: make(map[string]*Room),
+		mu:     &sync.Mutex{},
+		rooms:  make(map[string]*Room),
+		delete: make(chan string),
 	}
 }
 
@@ -23,7 +26,8 @@ func (rm *RoomManager) CreateRoom(name string) error {
 		events:  make(chan Event),
 	}
 
-	go room.Run()
+	go room.Run(rm.delete, name)
+	go rm.RoomDeleter()
 
 	rm.mu.Lock()
 	if _, ok := rm.rooms[name]; ok {
@@ -45,4 +49,12 @@ func (rm *RoomManager) JoinRoom(roomName string, player *Player, preferredType s
 	}
 
 	return room.AddPlayer(player, preferredType)
+}
+
+func (rm *RoomManager) RoomDeleter() {
+	roomName := <-rm.delete
+	log.Println("deleting room: ", roomName)
+	rm.mu.Lock()
+	delete(rm.rooms, roomName)
+	rm.mu.Unlock()
 }

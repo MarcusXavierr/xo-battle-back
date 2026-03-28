@@ -28,6 +28,7 @@ func main() {
 		AllowedHeaders: []string{"*"},
 	}))
 	roomManager := room.NewRoomManager()
+	go roomManager.RoomDeleter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("The system is alive"))
 	})
