@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -40,15 +39,9 @@ func main() {
 		name := r.URL.Query().Get("name")
 		kind := r.URL.Query().Get("player_type")
 
-		if name == "" || kind == "" {
+		if name == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Missing name or player type"))
-			return
-		}
-
-		if strings.ToLower(kind) != "x" && strings.ToLower(kind) != "o" {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Invalid player type"))
+			w.Write([]byte("Missing name"))
 			return
 		}
 
@@ -58,8 +51,8 @@ func main() {
 			return
 		}
 
-		player := room.NewPlayer(conn, name, kind)
-		if err := roomManager.JoinRoom(roomName, player); err != nil {
+		player := room.NewPlayer(conn, name)
+		if err := roomManager.JoinRoom(roomName, player, kind); err != nil {
 			log.Printf("Error joining room: %v", err)
 			conn.Close()
 			return
