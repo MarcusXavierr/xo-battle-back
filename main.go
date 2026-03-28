@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -35,7 +36,13 @@ func main() {
 
 	r.Post("/room/{id}", func(w http.ResponseWriter, r *http.Request) {
 		name := chi.URLParam(r, "id")
+		if name == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("You must provide a room name"))
+			return
+		}
 		if err := roomManager.CreateRoom(name); err != nil {
+			w.WriteHeader(http.StatusConflict)
 			w.Write([]byte("The room '" + name + "' already exists dipshit"))
 			return
 		}
@@ -68,6 +75,7 @@ func main() {
 		player := room.NewPlayer(conn, name)
 		if err := roomManager.JoinRoom(roomName, player, kind); err != nil {
 			log.Printf("Error joining room: %v", err)
+			conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("{\"type\": \"error\"} \"reason\": \"%s\"", err)))
 			conn.Close()
 			return
 		}

@@ -6,11 +6,17 @@ import (
 	"sync"
 )
 
+type WebsocketError error
 type RoomManager struct {
 	mu     *sync.Mutex
 	rooms  map[string]*Room
 	delete chan string
 }
+
+var (
+	RoomNotFoundError WebsocketError = errors.New("room_not_found")
+	RoomFullError     WebsocketError = errors.New("room_full")
+)
 
 func NewRoomManager() *RoomManager {
 	return &RoomManager{
@@ -45,7 +51,7 @@ func (rm *RoomManager) JoinRoom(roomName string, player *Player, preferredType s
 	rm.mu.Unlock()
 
 	if !ok {
-		return errors.New("room not found")
+		return RoomNotFoundError
 	}
 
 	return room.AddPlayer(player, preferredType)

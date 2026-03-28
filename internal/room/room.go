@@ -46,7 +46,7 @@ func (r *Room) AddPlayer(player *Player, preferredType string) error {
 		return nil
 	}
 
-	return errors.New("The room is full. Get out!")
+	return RoomFullError
 }
 
 func resolveFirstPlayerType(preferred string) (PlayerType, error) {
