@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -42,6 +43,12 @@ func main() {
 		if name == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Missing name"))
+			return
+		}
+
+		if kind != "" && strings.ToLower(kind) != "x" && strings.ToLower(kind) != "o" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Invalid player type"))
 			return
 		}
 
