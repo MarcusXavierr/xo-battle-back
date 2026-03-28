@@ -44,5 +44,5 @@ func (rm *RoomManager) JoinRoom(roomName string, player *Player) error {
 		return errors.New("room not found")
 	}
 
-	return room.AddPlayer(player)
+	return room.AddPlayer(player, "")
 }
