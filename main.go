@@ -14,6 +14,7 @@ import (
 
 	"github.com/MarcusXavierr/xo-battle-back/internal/room"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/gorilla/websocket"
 )
 
@@ -21,6 +22,11 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 
 func main() {
 	r := chi.NewRouter()
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+	}))
 	roomManager := room.NewRoomManager()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("The system is alive"))
