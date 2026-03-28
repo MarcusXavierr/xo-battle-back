@@ -46,7 +46,7 @@ func main() {
 			return
 		}
 
-		if kind != "" && strings.ToLower(kind) != "x" && strings.ToLower(kind) != "o" {
+		if lower := strings.ToLower(kind); lower != "" && lower != "x" && lower != "o" {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid player type"))
 			return

@@ -32,20 +32,14 @@ func (r *Room) AddPlayer(player *Player, preferredType string) error {
 		}
 		player.SetKind(kind)
 		r.players[0] = player
-		if player.conn != nil {
-			go player.readLoop(r)
-			go player.writeLoop()
-		}
+		player.start(r)
 		return nil
 	}
 
 	if r.players[1] == nil {
 		player.SetKind(oppositeType(r.players[0].kind))
 		r.players[1] = player
-		if player.conn != nil {
-			go player.readLoop(r)
-			go player.writeLoop()
-		}
+		player.start(r)
 
 		r.notifyPlayerJoined(r.players[0], 2)
 		r.notifyPlayerJoined(r.players[1], 1)

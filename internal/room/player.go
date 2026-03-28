@@ -75,3 +75,11 @@ func NewPlayer(conn *websocket.Conn, name string) *Player {
 func (p *Player) SetKind(kind PlayerType) {
 	p.kind = kind
 }
+
+func (p *Player) start(room *Room) {
+	if p.conn == nil {
+		return
+	}
+	go p.readLoop(room)
+	go p.writeLoop()
+}
