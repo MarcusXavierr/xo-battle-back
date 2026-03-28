@@ -81,13 +81,18 @@ func main() {
 		}
 	})
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8888"
+	}
+
 	server := http.Server{
-		Addr:    ":8888",
+		Addr:    ":" + port,
 		Handler: r,
 	}
 
 	go func() {
-		log.Println("Starting HTTP server on port 8888")
+		log.Printf("Starting HTTP server on port %s", port)
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("HTTP server closed with error: %v", err)
 		}
