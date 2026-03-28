@@ -81,7 +81,7 @@ func (r *Room) notifyPlayerJoined(player *Player, oponentOrder int) {
 	player.send <- msg
 }
 
-func (r *Room) Run() {
+func (r *Room) Run(deleteItself chan string, roomName string) {
 	for event := range r.events {
 		switch event.kind {
 		case EventMessage:
@@ -95,11 +95,15 @@ func (r *Room) Run() {
 			event.player.send <- []byte("GoodBye")
 			other := r.opponent(event.player)
 			if other == nil {
+				deleteItself <- roomName
 				return
 			}
+			// Right now we don't let the other player wait for a new opponent, we just kick them out.
+			// We can change this later if we want to.
 			msg, _ := json.Marshal(PlayerDisconnectedMsg{Type: MsgPlayerDisconnected})
 			other.send <- msg
 			close(other.send)
+			deleteItself <- roomName
 			return
 		}
 	}
