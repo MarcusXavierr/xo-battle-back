@@ -7,10 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/MarcusXavierr/xo-battle-back/internal/metrics"
@@ -114,10 +111,6 @@ func main() {
 		log.Println("Stopped serving HTTP connections")
 	}()
 
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
-	hold(sc)
-
 	ctx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownRelease()
 
@@ -129,28 +122,4 @@ func main() {
 	}
 
 	log.Println("Gracefully shut down the server")
-}
-
-func hold(sc chan os.Signal) {
-	tries := 0
-	slur := "Shut the fuck up bitch"
-	for {
-		value := <-sc
-		if value == syscall.SIGTERM {
-			break
-		}
-
-		if tries >= 3 {
-			log.Println("Okay fuck it, I'm going to shut the fuck down")
-			break
-		}
-
-		if tries >= 1 {
-			log.Println(slur + " (" + strconv.Itoa(tries) + ")")
-		} else {
-			log.Println(slur)
-		}
-
-		tries++
-	}
 }
