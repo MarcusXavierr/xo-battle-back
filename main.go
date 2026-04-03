@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MarcusXavierr/xo-battle-back/internal/metrics"
 	"github.com/MarcusXavierr/xo-battle-back/internal/room"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -24,14 +25,19 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 
 func main() {
 	godotenv.Load()
+	appMetrics := metrics.NewMetrics(true)
+
 	r := chi.NewRouter()
 	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: allowedOrigins,
-		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
+		AllowedOrigins:   allowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With"},
+		AllowCredentials: true,
+		MaxAge:           300,
 	}))
-	roomManager := room.NewRoomManager()
+	r.Use(metrics.PrometheusMiddleware(appMetrics))
+	roomManager := room.NewRoomManager(appMetrics)
 	go roomManager.RoomDeleter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("The system is alive"))
@@ -75,14 +81,20 @@ func main() {
 			return
 		}
 
-		player := room.NewPlayer(conn, name)
+		player := room.NewPlayer(conn, name, appMetrics)
 		if err := roomManager.JoinRoom(roomName, player, kind); err != nil {
 			log.Printf("Error joining room: %v", err)
+			appMetrics.IncWSConnectionsTotal("error")
 			conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("{\"type\": \"error\"} \"reason\": \"%s\"", err)))
 			conn.Close()
 			return
 		}
+		appMetrics.IncWSConnectionsTotal("success")
 	})
+
+	// Metrics server
+	metricsPort := os.Getenv("METRICS_PORT")
+	appMetrics.StartServer(metricsPort)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -111,6 +123,9 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
+	}
+	if err := appMetrics.StopServer(ctx); err != nil {
+		log.Fatal("Metrics Server Shutdown:", err)
 	}
 
 	log.Println("Gracefully shut down the server")
