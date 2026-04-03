@@ -11,7 +11,7 @@ func newTestRoom() *Room {
 
 func TestAddPlayer_FirstPlayerDefaultsToX(t *testing.T) {
 	r := newTestRoom()
-	p := NewPlayer(nil, "Alice")
+	p := NewPlayer(nil, "Alice", nil)
 
 	err := r.AddPlayer(p, "")
 	if err != nil {
@@ -24,7 +24,7 @@ func TestAddPlayer_FirstPlayerDefaultsToX(t *testing.T) {
 
 func TestAddPlayer_FirstPlayerChoosesO(t *testing.T) {
 	r := newTestRoom()
-	p := NewPlayer(nil, "Alice")
+	p := NewPlayer(nil, "Alice", nil)
 
 	err := r.AddPlayer(p, "o")
 	if err != nil {
@@ -37,7 +37,7 @@ func TestAddPlayer_FirstPlayerChoosesO(t *testing.T) {
 
 func TestAddPlayer_FirstPlayerInvalidType(t *testing.T) {
 	r := newTestRoom()
-	p := NewPlayer(nil, "Alice")
+	p := NewPlayer(nil, "Alice", nil)
 
 	err := r.AddPlayer(p, "z")
 	if err == nil {

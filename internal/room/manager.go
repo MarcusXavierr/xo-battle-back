@@ -4,13 +4,16 @@ import (
 	"errors"
 	"log"
 	"sync"
+
+	"github.com/MarcusXavierr/xo-battle-back/internal/metrics"
 )
 
 type WebsocketError error
 type RoomManager struct {
-	mu     *sync.Mutex
-	rooms  map[string]*Room
-	delete chan string
+	mu      *sync.Mutex
+	rooms   map[string]*Room
+	delete  chan string
+	metrics *metrics.Metrics
 }
 
 var (
@@ -18,11 +21,15 @@ var (
 	RoomFullError     WebsocketError = errors.New("room_full")
 )
 
-func NewRoomManager() *RoomManager {
+func NewRoomManager(m *metrics.Metrics) *RoomManager {
+	if m == nil {
+		panic("metrics is nil")
+	}
 	return &RoomManager{
-		mu:     &sync.Mutex{},
-		rooms:  make(map[string]*Room),
-		delete: make(chan string),
+		mu:      &sync.Mutex{},
+		rooms:   make(map[string]*Room),
+		delete:  make(chan string),
+		metrics: m,
 	}
 }
 
@@ -33,7 +40,6 @@ func (rm *RoomManager) CreateRoom(name string) error {
 	}
 
 	go room.Run(rm.delete, name)
-	go rm.RoomDeleter()
 
 	rm.mu.Lock()
 	if _, ok := rm.rooms[name]; ok {
@@ -42,6 +48,8 @@ func (rm *RoomManager) CreateRoom(name string) error {
 	}
 	rm.rooms[name] = room
 	rm.mu.Unlock()
+	rm.metrics.IncGameRoomsCreated()
+	rm.metrics.IncGameRoomsActive()
 	return nil
 }
 
@@ -58,9 +66,11 @@ func (rm *RoomManager) JoinRoom(roomName string, player *Player, preferredType s
 }
 
 func (rm *RoomManager) RoomDeleter() {
-	roomName := <-rm.delete
-	log.Println("deleting room: ", roomName)
-	rm.mu.Lock()
-	delete(rm.rooms, roomName)
-	rm.mu.Unlock()
+	for roomName := range rm.delete {
+		log.Println("deleting room: ", roomName)
+		rm.mu.Lock()
+		delete(rm.rooms, roomName)
+		rm.mu.Unlock()
+		rm.metrics.DecGameRoomsActive()
+	}
 }
